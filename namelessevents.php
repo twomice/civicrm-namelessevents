@@ -39,6 +39,43 @@ function namelessevents_civicrm_validateForm($formName, &$fields, &$files, &$for
 }
 
 /**
+ * Implements hook_civicrm_tabset().
+ *
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_tabset/
+ */
+function namelessevents_civicrm_tabset($tabsetName, &$tabs, $context) {
+  if ($tabsetName == 'civicrm/event/manage') {
+
+    if ($eventId = CRM_Utils_Array::value('event_id', $context)) {
+//      $eventSettings = CRM_Participantletter_Settings::getEventSettings($eventId);
+      $tabs['namelesseventssubtypeprofiles'] = array(
+        'title' => E::ts('Profiles/Sub-types'),
+        'link' => NULL, // 'link' is automatically provided if we're under the 'civicrm/event/manage' path.
+        'class' => 'ajaxForm', // allows form to re-load itself on save.
+        'valid' => TRUE, //(bool)CRM_Utils_Array::value('is_participantletter', $eventSettings),
+        'active' => TRUE,
+        'current' => TRUE,  // setting this to FALSE prevents the tab from getting
+                            // focus when called directly, e.g., from under the
+                            // "Configure" link on the Manage Events listing page.
+      );
+    }
+    else {
+      $tabs['namelesseventssubtypeprofiles'] = array(
+        'title' => E::ts('Profiles/Sub-types'),
+        'url' => 'civicrm/event/manage/namelessevents/configsubtypeprofiles',
+        'field' => 'is_register_online',
+      );
+    }
+  }
+
+  // on manage events listing screen, this section sets particpantletter tab in configuration popup as enabled/disabled.
+//  if ($tabsetName == 'civicrm/event/manage/rows' && $eventId = CRM_Utils_Array::value('event_id', $context)) {
+//    $eventSettings = CRM_Participantletter_Settings::getEventSettings($eventId);
+//    $tabs[$eventId]['is_participantletter'] = CRM_Utils_Array::value('is_participantletter', $eventSettings);
+//  }
+}
+
+/**
  * Implements hook_civicrm_config().
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_config/ 
