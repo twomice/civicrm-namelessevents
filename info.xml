@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<extension key="namelessevents" type="module">
+  <file>namelessevents</file>
+  <name>FIXME</name>
+  <description>FIXME</description>
+  <license>GPL-3.0</license>
+  <maintainer>
+    <author>Allen Shaw</author>
+    <email>allen@JoineryHQ.com</email>
+  </maintainer>
+  <urls>
+    <url desc="Main Extension Page">http://FIXME</url>
+    <url desc="Documentation">http://FIXME</url>
+    <url desc="Support">http://FIXME</url>
+    <url desc="Licensing">http://www.gnu.org/licenses/gpl-3.0.html</url>
+  </urls>
+  <requires>
+    <ext>org.civicrm.bar</ext>
+  </requires>
+  <releaseDate>2020-02-02</releaseDate>
+  <version>1.0</version>
+  <develStage>beta</develStage>
+  <compatibility>
+    <ver>5.0</ver>
+  </compatibility>
+  <comments>Developed for NamelessNetwork.org by Joinery</comments>
+  <classloader>
+    <psr4 prefix="Civi\" path="Civi"/>
+  </classloader>
+  <civix>
+    <namespace>CRM/Namelessevents</namespace>
+  </civix>
+</extension>
