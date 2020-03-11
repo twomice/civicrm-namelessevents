@@ -9,32 +9,77 @@ use CRM_Namelessevents_ExtensionUtil as E;
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_validateForm/
  */
 function namelessevents_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
+  // FIXME: this code is incomplete.
+  return;
   if($formName == 'CRM_Event_Form_ManageEvent_Registration') {
     // Validating the "online registration" event config form, ensure 'date of birth'
-    // and 'contact sub-type' fields are included in at least one profile.
+    // and 'contact sub-type' fields are included in at least one profile for the main
+    // participant.
 
-    // List of all included profiles:
-    $profileIds = [];
-    $profileIds[] = CRM_Utils_Array::value('custom_pre_id', $form->_submitValues);
-    $profileIds[] = CRM_Utils_Array::value('custom_post_id', $form->_submitValues);
-    $profileIds[] = CRM_Utils_Array::value('additional_custom_pre_id', $form->_submitValues);
-    $profileIds[] = CRM_Utils_Array::value('additional_custom_post_id', $form->_submitValues);
-    $profileIds = array_merge($profileIds, CRM_Utils_Array::value('custom_post_id_multiple', $form->_submitValues, []));
-    $profileIds = array_merge($profileIds, CRM_Utils_Array::value('additional_custom_post_id_multiple', $form->_submitValues, []));
+    // Don't bother with this if we've disabled online registration.
+    if (CRM_Utils_Array::value('is_online_registration', $form->_submitValues)) {
+      $requiredUfFieldNames = ['birth_date', 'contact_sub_type'];
 
-    // Check that the required fields appear in at least one of the selected profiles.
-    $requiredUfFieldNames = ['birth_date', 'contact_sub_type'];
-    foreach ($requiredUfFieldNames as $requiredUfFieldName) {
-      $apiParams = [
-        'uf_group_id' => ['IN' => $profileIds],
-        'field_name' => $requiredUfFieldName,
-        'is_active' => TRUE,
-      ];
-      $fields = civicrm_api3('UFField', 'get', $apiParams);
-      if (!$fields['count']) {
-        $errors['is_online_registration'] = E::ts('If allowing online registration, you must provide both the "Date of Birth" and "Contact Sub-Type" fields in one of the profiles in the "Registration Screen" section.') . " not found: $requiredUfFieldName";
+      // List of all included profiles:
+      $profileIds = [];
+      $profileIds[] = CRM_Utils_Array::value('custom_pre_id', $form->_submitValues);
+      $profileIds[] = CRM_Utils_Array::value('custom_post_id', $form->_submitValues);
+      $profileIds = array_merge($profileIds, CRM_Utils_Array::value('custom_post_id_multiple', $form->_submitValues, []));
+      // Strip any empty values and duplicate values.
+      $profileIds = array_unique(array_filter($profileIds));
+
+      // Check that the required fields appear in at least one of the selected profiles.
+      $requiredUfFieldNames = ['birth_date', 'contact_sub_type'];
+      foreach ($requiredUfFieldNames as $requiredUfFieldName) {
+        $apiParams = [
+          'uf_group_id' => ['IN' => $profileIds],
+          'field_name' => $requiredUfFieldName,
+          'is_active' => TRUE,
+        ];
+        dsm($apiParams, '$apiParams main');
+        $getFields = civicrm_api3('UFField', 'get', $apiParams);
+        if (!$getFields['count']) {
+          $errors['is_online_registration'] = E::ts('If allowing online registration, you must provide both the "Date of Birth" and "Contact Sub-Type" fields in one of the "Include Profile" settings in the "Registration Screen" section.');
+          break;
+        }
+      }
+
+      // Also ensure those fields are in a profile for 'additional participants',
+      // but don't bother with this if we've disabled 'multiple participant' registration.
+      if (CRM_Utils_Array::value('is_multiple_registrations', $form->_submitValues)) {
+        $additionalProfilesError = FALSE;
+        $profileIds = [];
+        $profileIds[] = CRM_Utils_Array::value('additional_custom_pre_id', $form->_submitValues);
+        $profileIds[] = CRM_Utils_Array::value('additional_custom_post_id', $form->_submitValues);
+        $profileIds = array_merge($profileIds, CRM_Utils_Array::value('additional_custom_post_id_multiple', $form->_submitValues, []));
+        // Strip any empty values and duplicate values.
+        $profileIds = array_unique(array_filter($profileIds, 'is_numeric'));
+
+        if (empty($profileIds)) {
+          $additionalProfilesError = TRUE;
+        }
+        else {
+          // Check that the required fields appear in at least one of the selected "additional participant" profiles.
+          foreach ($requiredUfFieldNames as $requiredUfFieldName) {
+            $apiParams = [
+              'uf_group_id' => ['IN' => $profileIds],
+              'field_name' => $requiredUfFieldName,
+              'is_active' => TRUE,
+            ];
+            dsm($apiParams, '$apiParams additional');
+            $getFields = civicrm_api3('UFField', 'get', $apiParams);
+            if (!$getFields['count']) {
+              $additionalProfilesError = TRUE;
+              break;
+            }
+          }
+        }
+        if ($additionalProfilesError) {
+          $errors['is_multiple_registrations'] = E::ts('If allowing multiple participant registration, you must provide both the "Date of Birth" and "Contact Sub-Type" fields in one of the "Profile for Additional Participants" settings in the "Registration Screen" section.');
+        }
       }
     }
+
   }
 }
 
@@ -78,7 +123,7 @@ function namelessevents_civicrm_tabset($tabsetName, &$tabs, $context) {
 /**
  * Implements hook_civicrm_config().
  *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_config/ 
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_config/
  */
 function namelessevents_civicrm_config(&$config) {
   _namelessevents_civix_civicrm_config($config);
