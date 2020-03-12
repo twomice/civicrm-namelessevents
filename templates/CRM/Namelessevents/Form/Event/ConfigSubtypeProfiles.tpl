@@ -14,6 +14,10 @@
       <tr class="crm-event-student-progress-form-block-profile_subtypes">
         <td></td>
         <td style="padding-top: 2em">
+          <div class="help">
+            For proper functioning, each Contact Sub-Type must have access to a profile containing the Birth Date field.
+            Such profiles are marked with this symbol: {$hasBirthDateMarker}
+          </div>
           <table>
             <tr>
             <th rowspan="2" style="padding: 1em 1em 0">{ts}Profile{/ts}</th>

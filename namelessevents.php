@@ -15,8 +15,7 @@ function namelessevents_civicrm_validateForm($formName, &$fields, &$files, &$for
 
     $studentProgressSettings = CRM_Namelessevents_Settings::getEventSettings($form->getVar('_id'));
 
-    // Only bother with this if we've disabled online registration, and if Student
-    // Progress is enabled for this event.
+    // Only bother with this if Student Progress is enabled for this event.
     if (
       CRM_Utils_Array::value('is_online_registration', $form->_submitValues)
       && CRM_Utils_Array::value('is_student_progress', $studentProgressSettings)

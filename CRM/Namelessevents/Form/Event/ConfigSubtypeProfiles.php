@@ -33,6 +33,7 @@ class CRM_Namelessevents_Form_Event_ConfigSubtypeProfiles extends CRM_Event_Form
   }
 
   public function buildQuickForm() {
+    $this->assign('selectedChild', 'studentprogress');
     $this->add(
       'hidden', // field type
       'event_id' // field name
@@ -57,12 +58,22 @@ class CRM_Namelessevents_Form_Event_ConfigSubtypeProfiles extends CRM_Event_Form
       ->addWhere('entity_id', '=', $this->getEntityId())
       ->addChain('ufGroup', \Civi\Api4\UFGroup::get()->addWhere('id', '=', '$uf_group_id'))
       ->execute();
+    $hasBirthDateMarker = '<i class="crm-i fa-calendar" style="margin-left: 1em"></i> ';
     foreach ($ufJoins as $ufJoin) {
-      $profiles[$ufJoin['uf_group_id']] = $ufJoin['ufGroup'][0]['title'];
+      // Determine if this profile has Birth Date field, so we can inform the user.
+      // There's no API4 for UFField, so use api3
+      $apiParams = [
+        'uf_group_id' => $ufJoin['uf_group_id'],
+        'field_name' => 'birth_date',
+        'is_active' => TRUE,
+      ];
+      $fieldCount = civicrm_api3('UFField', 'getcount', $apiParams);
+      $profiles[$ufJoin['uf_group_id']] = $ufJoin['ufGroup'][0]['title'] . ($fieldCount ? $hasBirthDateMarker : "");
     }
 
     $this->assign('profiles', $profiles);
     $this->assign('subTypes', $subTypes);
+    $this->assign('hasBirthDateMarker', $hasBirthDateMarker);
 
     foreach ($profiles as $profileId => $profileTitle) {
       foreach ($subTypes as $subTypeId => $subTypeLabel) {
