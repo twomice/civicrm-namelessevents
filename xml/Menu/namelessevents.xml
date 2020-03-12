@@ -6,4 +6,10 @@
     <title>Event_ConfigSubtypeProfiles</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
+  <item>
+    <path>civicrm/namelessevents/ajax</path>
+    <page_callback>CRM_Namelessevents_Page_Ajax</page_callback>
+    <title>Ajax</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>

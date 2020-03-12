@@ -4,6 +4,20 @@ require_once 'namelessevents.civix.php';
 use CRM_Namelessevents_ExtensionUtil as E;
 
 /**
+ * Implements hook_civicrm_buildForm().
+ *
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_buildForm/
+ */
+function namelessevents_civicrm_buildForm($formName, &$form) {
+  if (
+    $formName == 'CRM_Event_Form_Registration_Register'
+    || $formName == 'CRM_Event_Form_Registration_AdditionalParticipant'
+  ) {
+    CRM_Core_Resources::singleton()->addScriptFile('namelessevents', 'js/CRM_Event_Form_Registration.js');
+  }
+}
+
+/**
  * Implements hook_civicrm_validateForm().
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_validateForm/
