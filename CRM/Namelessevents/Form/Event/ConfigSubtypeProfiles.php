@@ -77,34 +77,18 @@ class CRM_Namelessevents_Form_Event_ConfigSubtypeProfiles extends CRM_Event_Form
 
   public function postProcess() {
     $values = $this->exportValues();
+    $settings = [
+      'is_student_progress' => FALSE,
+      'profiles' => [],
+    ];
 
-    if ($isStudentProgress = CRM_Utils_Array::value('is_student_progress', $values)) {
-      $settings = [];
+    if (CRM_Utils_Array::value('is_student_progress', $values)) {
+      $settings['is_student_progress'] = TRUE;
       foreach (CRM_Utils_Array::value('profile', $values, []) as $profileId => $subTypes) {
-        $settings[$profileId] = array_keys($subTypes);
+        $settings['profiles'][$profileId] = array_keys($subTypes);
       }
-      $namelesseventsProfileGet = \Civi\Api4\NamelesseventsProfiles::get()
-        ->addWhere('event_id', '=', $this->getEntityId())
-        ->execute()
-        ->first();
-      if (empty($namelesseventsProfileGet)) {
-        $namelesseventsProfile = \Civi\Api4\NamelesseventsProfiles::create()
-          ->addValue('event_id', $this->getEntityId());
-      }
-      else {
-        $namelesseventsProfile = \Civi\Api4\NamelesseventsProfiles::update()
-          ->addWhere('id', '=', $namelesseventsProfileGet['id']);
-      }
-      // Whether create or update, add the jsonified settings.
-      $json = json_encode($settings);
-      $namelesseventsProfile->addValue('settings', $json);
-      $namelesseventsProfile->execute();
     }
-    else {
-      $namelesseventsProfileGet = \Civi\Api4\NamelesseventsProfiles::delete()
-        ->addWhere('event_id', '=', $this->getEntityId())
-        ->execute();
-    }
+    CRM_Namelessevents_Settings::saveAllEventSettings($this->getEntityId(), $settings);
 
     parent::postProcess();
   }
@@ -113,17 +97,11 @@ class CRM_Namelessevents_Form_Event_ConfigSubtypeProfiles extends CRM_Event_Form
     $defaults = [
       'event_id' => $this->getEntityId(),
     ];
-    $namelesseventsProfileGet = \Civi\Api4\NamelesseventsProfiles::get()
-      ->addWhere('event_id', '=', $this->getEntityId())
-      ->execute()
-      ->first();
-    if (!empty($namelesseventsProfileGet)) {
-      $defaults['is_student_progress'] = TRUE;
-      $profiles = \GuzzleHttp\json_decode($namelesseventsProfileGet['settings']);
-      foreach ($profiles as $profileId => $subTypeIds) {
-        foreach ($subTypeIds as $subTypeId) {
-          $defaults["profile[{$profileId}][{$subTypeId}]"] = TRUE;
-        }
+    $eventSettings = CRM_Namelessevents_Settings::getEventSettings($this->getEntityId());
+    $defaults['is_student_progress'] = $eventSettings['is_student_progress'];
+    foreach ($eventSettings['profiles'] as $profileId => $subTypeIds) {
+      foreach ($subTypeIds as $subTypeId) {
+        $defaults["profile[{$profileId}][{$subTypeId}]"] = TRUE;
       }
     }
     return $defaults;

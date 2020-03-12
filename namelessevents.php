@@ -90,11 +90,8 @@ function namelessevents_civicrm_tabset($tabsetName, &$tabs, $context) {
   if ($tabsetName == 'civicrm/event/manage') {
 
     if ($eventId = CRM_Utils_Array::value('event_id', $context)) {
-      $namelesseventsProfileGet = \Civi\Api4\NamelesseventsProfiles::get()
-        ->addWhere('event_id', '=', $eventId)
-        ->execute()
-        ->first();
-      $tabIsValid = (!empty($namelesseventsProfileGet));
+      $eventSettings = CRM_Namelessevents_Settings::getEventSettings($eventId);
+      $tabIsValid = (CRM_Utils_Array::value('is_student_progress', $eventSettings));
 
       $tabs['studentprogress'] = array(
         'title' => E::ts('Student Progress'),
@@ -117,11 +114,8 @@ function namelessevents_civicrm_tabset($tabsetName, &$tabs, $context) {
 
   // on manage events listing screen, this section sets studentprogress tab in configuration popup as enabled/disabled.
   if ($tabsetName == 'civicrm/event/manage/rows' && $eventId = CRM_Utils_Array::value('event_id', $context)) {
-    $namelesseventsProfileGet = \Civi\Api4\NamelesseventsProfiles::get()
-      ->addWhere('event_id', '=', $eventId)
-      ->execute()
-      ->first();
-    $tabs[$eventId]['is_student_progress'] = (!empty($namelesseventsProfileGet));
+    $eventSettings = CRM_Namelessevents_Settings::getEventSettings($eventId);
+    $tabs[$eventId]['is_student_progress'] = CRM_Utils_Array::value('is_student_progress', $eventSettings);
   }
 }
 
