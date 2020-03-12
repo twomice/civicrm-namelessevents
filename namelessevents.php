@@ -13,7 +13,92 @@ function namelessevents_civicrm_buildForm($formName, &$form) {
     $formName == 'CRM_Event_Form_Registration_Register'
     || $formName == 'CRM_Event_Form_Registration_AdditionalParticipant'
   ) {
-    CRM_Core_Resources::singleton()->addScriptFile('namelessevents', 'js/CRM_Event_Form_Registration.js');
+    $eventId = $form->getVar('_eventId');
+    $eventSettings = CRM_Namelessevents_Settings::getEventSettings($eventId);
+    // If Student Progress is enabled for this event:
+    if (CRM_Utils_Array::value('is_student_progress', $eventSettings)) {
+      // Add a hidden form element, #ageprogressSubType, which will store the
+      // age-based subtype ID based on contact's birthdate.
+      $form->add(
+        'hidden', // field type
+        'ageprogressSubType', // field name
+        NULL,
+        ['id' => 'ageprogressSubType']
+      );
+      // Get the contact's birthdate, and fill in the age-based subtype ID,
+      // if birthdate is available.
+      $defaults = $form->getVar('_defaults');
+      if ($birthDate = CRM_Utils_Array::value('birth_date', $defaults)) {
+        $form->setDefaults([
+          'ageprogressSubType' => CRM_Namelessevents_Util::getSubTypeIdPerBirthDate($birthDate),
+        ]);
+      }
+      // Add a JS script which will help us fetch age-based subtype ID as
+      // birthdate is changed on-page:
+      CRM_Core_Resources::singleton()->addScriptFile('namelessevents', 'js/CRM_Event_Form_Registration.js');
+    }
+  }
+}
+
+/**
+ * Implements hook_civicrm_profcond_alterConfig().
+ */
+function namelessevents_civicrm_profcond_alterConfig(&$config, $pageType, $entityId) {
+  // If we're on an event registration page.
+  if ($pageType == 'event') {
+    // Get Student Progress settings for this event.
+    $eventSettings = CRM_Namelessevents_Settings::getEventSettings($entityId);
+    // If Student Progress is enabled for this event:
+    if (CRM_Utils_Array::value('is_student_progress', $eventSettings)) {
+      // Get all profiles configured for this event.
+      $ufJoins = Civi\Api4\UFJoin::get()
+        ->addWhere('entity_table', '=', 'civicrm_event')
+        ->addWhere('entity_id', '=', $entityId)
+        ->addChain('ufGroup', \Civi\Api4\UFGroup::get()->addWhere('id', '=', '$uf_group_id'))
+        ->execute();
+
+      // Create one profcond rule for each profile, showing it for enabled Ageprogress SubTypes,
+      // and hiding it otherwise.
+      foreach ($ufJoins as $ufJoin) {
+        $profileId = $ufJoin['uf_group_id'];
+        $subTypeIds = CRM_Utils_Array::value($profileId, $eventSettings['profiles'], []);
+        if (in_array('all', $subTypeIds)) {
+          // This profile is configured to show for everyone, so don't create
+          // any show/hide rules for it; just skip it.
+          continue;
+        }
+        $config['event'][$entityId]['namelessevents_profile_' . $profileId] = [
+          'conditions' => [
+            'all_of' => [
+              [
+                'id' => 'ageprogressSubType',
+                'op' => 'value_is_one_of',
+                // Map subtypeIds to strings, because profcond will be comparing
+                // to the value of a the hidden #ageprogressSubType element, which
+                // in JS will be a string value.
+                'value' => array_map('strval', $subTypeIds),
+              ],
+            ],
+          ],
+          'states' => [
+            'pass' => [
+              'profiles' => [
+                $profileId => [
+                  'display' => 'show',
+                ],
+              ],
+            ],
+            'fail' => [
+              'profiles' => [
+                $profileId => [
+                  'display' => 'hide',
+                ],
+              ],
+            ],
+          ],
+        ];
+      }
+    }
   }
 }
 
@@ -107,7 +192,7 @@ function namelessevents_civicrm_tabset($tabsetName, &$tabs, $context) {
       $eventSettings = CRM_Namelessevents_Settings::getEventSettings($eventId);
       $tabIsValid = (CRM_Utils_Array::value('is_student_progress', $eventSettings));
 
-      $tabs['studentprogress'] = array(
+      $tabs['studentprogress'] = [
         'title' => E::ts('Student Progress'),
         'link' => NULL, // 'link' is automatically provided if we're under the 'civicrm/event/manage' path.
         'class' => 'ajaxForm', // allows form to re-load itself on save.
@@ -115,14 +200,14 @@ function namelessevents_civicrm_tabset($tabsetName, &$tabs, $context) {
         'active' => TRUE,
         'current' => FALSE, // setting this to FALSE prevents the tab from pre-loading
                             // focus when the page is loaded.
-      );
+      ];
     }
     else {
-      $tabs['studentprogress'] = array(
+      $tabs['studentprogress'] = [
         'title' => E::ts('Student Progress'),
         'url' => 'civicrm/event/manage/studentprogress',
         'field' => 'is_student_progress',
-      );
+      ];
     }
   }
 

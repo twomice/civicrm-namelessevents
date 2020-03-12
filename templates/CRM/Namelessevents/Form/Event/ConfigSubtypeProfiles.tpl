@@ -15,15 +15,16 @@
         <td></td>
         <td style="padding-top: 2em">
           <div class="help">
-            For proper functioning, each Contact Sub-Type must have access to a profile containing the Birth Date field.
-            Such profiles are marked with this symbol: {$hasBirthDateMarker}
+            Select the special type "Everyone" to dislpay the profile for all users. For proper functioning, "Everyone" must have access to a profile containing the Birth Date field.
+            Such profiles are marked with this symbol:{$hasBirthDateMarker}
           </div>
           <table>
             <tr>
             <th rowspan="2" style="padding: 1em 1em 0">{ts}Profile{/ts}</th>
-            <th colspan="{$subTypes|@count}" style="padding: 1em 1em 0">{ts}Display for contact sub-types{/ts}</th>
+            <th colspan="{$subTypesColumnCount}" style="padding: 1em 1em 0; text-align: center;">{ts}Display for contact sub-types{/ts}</th>
             </tr>
             <tr>
+              <th style="text-align: center">{ts}Everyone{/ts}</th>
               {foreach from=$subTypes key=subTypeId item=subTypeLabel}
                 <th style="text-align: center">{$subTypeLabel}</th>
               {/foreach}
@@ -31,7 +32,8 @@
             <tbody>
             {foreach from=$profiles key=profileId item=profileTitle}
               <tr class="{cycle values="odd-row,even-row"}">
-                <td>{$profileTitle}</td>
+                <td>{$profileTitle}{$profileHasBirthDateMarkers.$profileId}</td>
+                <td align="center">{$form.profile.$profileId.all.html}</td>
                 {foreach from=$subTypes key=subTypeId item=subTypeLabel}
                   <td align="center">{$form.profile.$profileId.$subTypeId.html}</td>
                 {/foreach}
@@ -44,7 +46,7 @@
     </table>
   </div>
 </div>
-            
+
 {* FOOTER *}
 <div class="crm-submit-buttons">
 {include file="CRM/common/formButtons.tpl" location="bottom"}

@@ -10,13 +10,12 @@ class CRM_Namelessevents_Util_Ajax {
    * Calculate sub-types based on birthdate, and print json object.
    */
   public static function getSubTypePerBirthDate() {
-    $util = CRM_Namelessprogress_Util::singleton();
-    $contact = [
-      'birth_date' => CRM_Utils_Request::retrieve('birth_date', 'String'),
-    ];
-    $age = $util->calculateAge($contact);
-    $subTypes = CRM_Ageprogress_Util::calculateAgeprogressSubTypes($age);
-    CRM_Utils_JSON::output(['age' => $age, 'subTypes' => $subTypes]);
+    $subTypeId = CRM_Namelessevents_Util::getSubTypeIdPerBirthDate(CRM_Utils_Request::retrieve('birth_date', 'String'));
+    $subType = \Civi\Api4\ContactType::get()
+      ->addWhere('name', '=', $subTypeId)
+      ->execute()
+      ->first();
+    CRM_Utils_JSON::output(['subtype' => $subTypeId]);
   }
 
 }
