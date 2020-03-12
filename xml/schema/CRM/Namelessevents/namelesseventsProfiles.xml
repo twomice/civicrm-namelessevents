@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+
+<table>
+  <base>CRM/Namelessevents</base>
+  <class>NamelesseventsProfiles</class>
+  <name>civicrm_namelessevents_profiles</name>
+  <comment>profiles-per-contact-sub-type for each event</comment>
+  <log>true</log>
+
+  <field>
+    <name>id</name>
+    <type>int unsigned</type>
+    <required>true</required>
+    <comment>Unique NamelesseventsProfiles ID</comment>
+  </field>
+  <primaryKey>
+    <name>id</name>
+    <autoincrement>true</autoincrement>
+  </primaryKey>
+
+  <field>
+    <name>event_id</name>
+    <type>int unsigned</type>
+    <comment>FK to Event</comment>
+  </field>
+  <foreignKey>
+    <name>event_id</name>
+    <table>civicrm_event</table>
+    <key>id</key>
+    <onDelete>CASCADE</onDelete>
+  </foreignKey>
+
+  <field>
+    <name>settings</name>
+    <title>Per-event profile-per-sub-type settings</title>
+    <type>varchar</type>
+    <length>1000</length>'
+    <import>true</import>
+    <export>true</export>
+    <required>false</required>
+    <comment>Per-event profile-per-sub-type settings</comment>
+  </field>
+
+</table>

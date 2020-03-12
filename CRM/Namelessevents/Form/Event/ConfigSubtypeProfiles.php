@@ -7,73 +7,126 @@ use CRM_Namelessevents_ExtensionUtil as E;
  *
  * @see https://docs.civicrm.org/dev/en/latest/framework/quickform/
  */
-class CRM_Namelessevents_Form_Event_ConfigSubtypeProfiles extends CRM_Core_Form {
+class CRM_Namelessevents_Form_Event_ConfigSubtypeProfiles extends CRM_Event_Form_ManageEvent {
+
+  /**
+   * The ID of the entity (in this case, the event) which we're configuring.
+   *
+   * @var int
+   * @see getEntityId()
+   */
+  private $entityId = NULL;
+
+  /**
+   * Returns the ID of the entity (in this case, the event) which we're configuring.
+   *
+   * @return int
+   */
+  protected function getEntityId() {
+    if ($this->entityId === NULL) {
+      $this->entityId = !empty($this->_id) ? $this->_id : NULL;
+      if ($this->entityId === NULL) {
+        $this->entityId = CRM_Utils_Request::retrieve('event_id', 'Positive', $this, TRUE);
+      }
+    }
+    return $this->entityId;
+  }
+
   public function buildQuickForm() {
-
-    // add form elements
     $this->add(
-      'select', // field type
-      'favorite_color', // field name
-      'Favorite Color', // field label
-      $this->getColorOptions(), // list of options
-      TRUE // is required
+      'hidden', // field type
+      'event_id' // field name
     );
-    $this->assign('contactSubTypes', ['favorite_color']);
-    
-    $this->addButtons(array(
-      array(
-        'type' => 'submit',
-        'name' => E::ts('Submit'),
-        'isDefault' => TRUE,
-      ),
-    ));
+    $this->addElement(
+      'checkbox',
+      'is_student_progress',
+      E::ts('Student Progress')
+    );
 
+    $profiles = $subTypes = [];
+
+    $ageprogressSubTypes = Civi\Api4\AgeprogressContactType::get()
+      ->addWhere('is_ageprogress', '=', 1)
+      ->addChain('contactType', \Civi\Api4\ContactType::get()->addWhere('id', '=', '$contact_type_id'))
+      ->execute();
+    foreach ($ageprogressSubTypes as $ageprogressSubType) {
+      $subTypes[$ageprogressSubType['contact_type_id']] = $ageprogressSubType['contactType'][0]['label'];
+    }
+    $ufJoins = Civi\Api4\UFJoin::get()
+      ->addWhere('entity_table', '=', 'civicrm_event')
+      ->addWhere('entity_id', '=', $this->getEntityId())
+      ->addChain('ufGroup', \Civi\Api4\UFGroup::get()->addWhere('id', '=', '$uf_group_id'))
+      ->execute();
+    foreach ($ufJoins as $ufJoin) {
+      $profiles[$ufJoin['uf_group_id']] = $ufJoin['ufGroup'][0]['title'];
+    }
+
+    $this->assign('profiles', $profiles);
+    $this->assign('subTypes', $subTypes);
+
+    foreach ($profiles as $profileId => $profileTitle) {
+      foreach ($subTypes as $subTypeId => $subTypeLabel) {
+        $this->addElement('checkbox', "profile[{$profileId}][{$subTypeId}]", '', NULL, ['title' => "$profileTitle / $subTypeLabel"]);
+      }
+    }
+
+    CRM_Core_Resources::singleton()->addScriptFile('namelessevents', 'js/CRM_Namelessevents_Form_Event_ConfigSubtypeProfiles.js');
     // export form elements
     parent::buildQuickForm();
   }
 
   public function postProcess() {
     $values = $this->exportValues();
-    $options = $this->getColorOptions();
-    CRM_Core_Session::setStatus(E::ts('You picked color "%1"', array(
-      1 => $options[$values['favorite_color']],
-    )));
+
+    if ($isStudentProgress = CRM_Utils_Array::value('is_student_progress', $values)) {
+      $settings = [];
+      foreach (CRM_Utils_Array::value('profile', $values, []) as $profileId => $subTypes) {
+        $settings[$profileId] = array_keys($subTypes);
+      }
+      $namelesseventsProfileGet = \Civi\Api4\NamelesseventsProfiles::get()
+        ->addWhere('event_id', '=', $this->getEntityId())
+        ->execute()
+        ->first();
+      if (empty($namelesseventsProfileGet)) {
+        $namelesseventsProfile = \Civi\Api4\NamelesseventsProfiles::create()
+          ->addValue('event_id', $this->getEntityId());
+      }
+      else {
+        $namelesseventsProfile = \Civi\Api4\NamelesseventsProfiles::update()
+          ->addWhere('id', '=', $namelesseventsProfileGet['id']);
+      }
+      // Whether create or update, add the jsonified settings.
+      $json = json_encode($settings);
+      $namelesseventsProfile->addValue('settings', $json);
+      $namelesseventsProfile->execute();
+    }
+    else {
+      $namelesseventsProfileGet = \Civi\Api4\NamelesseventsProfiles::delete()
+        ->addWhere('event_id', '=', $this->getEntityId())
+        ->execute();
+    }
+
     parent::postProcess();
   }
 
-  public function getColorOptions() {
-    $options = array(
-      '' => E::ts('- select -'),
-      '#f00' => E::ts('Red'),
-      '#0f0' => E::ts('Green'),
-      '#00f' => E::ts('Blue'),
-      '#f0f' => E::ts('Purple'),
-    );
-    foreach (array('1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e') as $f) {
-      $options["#{$f}{$f}{$f}"] = E::ts('Grey (%1)', array(1 => $f));
-    }
-    return $options;
-  }
-
-  /**
-   * Get the fields/elements defined in this form.
-   *
-   * @return array (string)
-   */
-  public function getRenderableElementNames() {
-    // The _elements list includes some items which should not be
-    // auto-rendered in the loop -- such as "qfKey" and "buttons".  These
-    // items don't have labels.  We'll identify renderable by filtering on
-    // the 'label'.
-    $elementNames = array();
-    foreach ($this->_elements as $element) {
-      /** @var HTML_QuickForm_Element $element */
-      $label = $element->getLabel();
-      if (!empty($label)) {
-        $elementNames[] = $element->getName();
+  public function setDefaultValues() {
+    $defaults = [
+      'event_id' => $this->getEntityId(),
+    ];
+    $namelesseventsProfileGet = \Civi\Api4\NamelesseventsProfiles::get()
+      ->addWhere('event_id', '=', $this->getEntityId())
+      ->execute()
+      ->first();
+    if (!empty($namelesseventsProfileGet)) {
+      $defaults['is_student_progress'] = TRUE;
+      $profiles = \GuzzleHttp\json_decode($namelesseventsProfileGet['settings']);
+      foreach ($profiles as $profileId => $subTypeIds) {
+        foreach ($subTypeIds as $subTypeId) {
+          $defaults["profile[{$profileId}][{$subTypeId}]"] = TRUE;
+        }
       }
     }
-    return $elementNames;
+    return $defaults;
   }
 
 }

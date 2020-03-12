@@ -11,7 +11,7 @@ use CRM_Namelessevents_ExtensionUtil as E;
 function namelessevents_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
   // FIXME: this code is incomplete.
   return;
-  if($formName == 'CRM_Event_Form_ManageEvent_Registration') {
+  if ($formName == 'CRM_Event_Form_ManageEvent_Registration') {
     // Validating the "online registration" event config form, ensure 'date of birth'
     // and 'contact sub-type' fields are included in at least one profile for the main
     // participant.
@@ -36,7 +36,6 @@ function namelessevents_civicrm_validateForm($formName, &$fields, &$files, &$for
           'field_name' => $requiredUfFieldName,
           'is_active' => TRUE,
         ];
-        dsm($apiParams, '$apiParams main');
         $getFields = civicrm_api3('UFField', 'get', $apiParams);
         if (!$getFields['count']) {
           $errors['is_online_registration'] = E::ts('If allowing online registration, you must provide both the "Date of Birth" and "Contact Sub-Type" fields in one of the "Include Profile" settings in the "Registration Screen" section.');
@@ -66,7 +65,6 @@ function namelessevents_civicrm_validateForm($formName, &$fields, &$files, &$for
               'field_name' => $requiredUfFieldName,
               'is_active' => TRUE,
             ];
-            dsm($apiParams, '$apiParams additional');
             $getFields = civicrm_api3('UFField', 'get', $apiParams);
             if (!$getFields['count']) {
               $additionalProfilesError = TRUE;
@@ -92,32 +90,39 @@ function namelessevents_civicrm_tabset($tabsetName, &$tabs, $context) {
   if ($tabsetName == 'civicrm/event/manage') {
 
     if ($eventId = CRM_Utils_Array::value('event_id', $context)) {
-//      $eventSettings = CRM_Participantletter_Settings::getEventSettings($eventId);
-      $tabs['namelesseventssubtypeprofiles'] = array(
-        'title' => E::ts('Profiles/Sub-types'),
+      $namelesseventsProfileGet = \Civi\Api4\NamelesseventsProfiles::get()
+        ->addWhere('event_id', '=', $eventId)
+        ->execute()
+        ->first();
+      $tabIsValid = (!empty($namelesseventsProfileGet));
+
+      $tabs['studentprogress'] = array(
+        'title' => E::ts('Student Progress'),
         'link' => NULL, // 'link' is automatically provided if we're under the 'civicrm/event/manage' path.
         'class' => 'ajaxForm', // allows form to re-load itself on save.
-        'valid' => TRUE, //(bool)CRM_Utils_Array::value('is_participantletter', $eventSettings),
+        'valid' => $tabIsValid, // indicates whether tab has actively used settings.
         'active' => TRUE,
-        'current' => TRUE,  // setting this to FALSE prevents the tab from getting
-                            // focus when called directly, e.g., from under the
-                            // "Configure" link on the Manage Events listing page.
+        'current' => FALSE, // setting this to FALSE prevents the tab from pre-loading
+                            // focus when the page is loaded.
       );
     }
     else {
-      $tabs['namelesseventssubtypeprofiles'] = array(
-        'title' => E::ts('Profiles/Sub-types'),
-        'url' => 'civicrm/event/manage/namelessevents/configsubtypeprofiles',
-        'field' => 'is_register_online',
+      $tabs['studentprogress'] = array(
+        'title' => E::ts('Student Progress'),
+        'url' => 'civicrm/event/manage/studentprogress',
+        'field' => 'is_student_progress',
       );
     }
   }
 
-  // on manage events listing screen, this section sets particpantletter tab in configuration popup as enabled/disabled.
-//  if ($tabsetName == 'civicrm/event/manage/rows' && $eventId = CRM_Utils_Array::value('event_id', $context)) {
-//    $eventSettings = CRM_Participantletter_Settings::getEventSettings($eventId);
-//    $tabs[$eventId]['is_participantletter'] = CRM_Utils_Array::value('is_participantletter', $eventSettings);
-//  }
+  // on manage events listing screen, this section sets studentprogress tab in configuration popup as enabled/disabled.
+  if ($tabsetName == 'civicrm/event/manage/rows' && $eventId = CRM_Utils_Array::value('event_id', $context)) {
+    $namelesseventsProfileGet = \Civi\Api4\NamelesseventsProfiles::get()
+      ->addWhere('event_id', '=', $eventId)
+      ->execute()
+      ->first();
+    $tabs[$eventId]['is_student_progress'] = (!empty($namelesseventsProfileGet));
+  }
 }
 
 /**
@@ -257,31 +262,3 @@ function namelessevents_civicrm_entityTypes(&$entityTypes) {
 function namelessevents_civicrm_themes(&$themes) {
   _namelessevents_civix_civicrm_themes($themes);
 }
-
-// --- Functions below this ship commented out. Uncomment as required. ---
-
-/**
- * Implements hook_civicrm_preProcess().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_preProcess
- *
-function namelessevents_civicrm_preProcess($formName, &$form) {
-
-} // */
-
-/**
- * Implements hook_civicrm_navigationMenu().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_navigationMenu
- *
-function namelessevents_civicrm_navigationMenu(&$menu) {
-  _namelessevents_civix_insert_navigation_menu($menu, 'Mailings', array(
-    'label' => E::ts('New subliminal message'),
-    'name' => 'mailing_subliminal_message',
-    'url' => 'civicrm/mailing/subliminal',
-    'permission' => 'access CiviMail',
-    'operator' => 'OR',
-    'separator' => 0,
-  ));
-  _namelessevents_civix_navigationMenu($menu);
-} // */

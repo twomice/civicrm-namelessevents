@@ -473,10 +473,10 @@ function _namelessevents_civix_civicrm_alterSettingsFolders(&$metaDataFolders = 
 
 function _namelessevents_civix_civicrm_entityTypes(&$entityTypes) {
   $entityTypes = array_merge($entityTypes, array (
-    'CRM_Namelessevents_DAO_namelesseventsProfiles' => 
+    'CRM_Namelessevents_DAO_NamelesseventsProfiles' => 
     array (
       'name' => 'NamelesseventsProfiles',
-      'class' => 'CRM_Namelessevents_DAO_namelesseventsProfiles',
+      'class' => 'CRM_Namelessevents_DAO_NamelesseventsProfiles',
       'table' => 'civicrm_namelessevents_profiles',
     ),
   ));

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <menu>
   <item>
-    <path>civicrm/event/manage/namelesseventssubtypeprofiles</path>
+    <path>civicrm/event/manage/studentprogress</path>
     <page_callback>CRM_Namelessevents_Form_Event_ConfigSubtypeProfiles</page_callback>
     <title>Event_ConfigSubtypeProfiles</title>
     <access_arguments>access CiviCRM</access_arguments>
