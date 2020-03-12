@@ -9,16 +9,18 @@ use CRM_Namelessevents_ExtensionUtil as E;
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_validateForm/
  */
 function namelessevents_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
-  // FIXME: this code is incomplete.
-  return;
   if ($formName == 'CRM_Event_Form_ManageEvent_Registration') {
     // Validating the "online registration" event config form, ensure 'date of birth'
-    // and 'contact sub-type' fields are included in at least one profile for the main
-    // participant.
+    // fields are included in at least one profile for the main participant.
 
-    // Don't bother with this if we've disabled online registration.
-    if (CRM_Utils_Array::value('is_online_registration', $form->_submitValues)) {
-      $requiredUfFieldNames = ['birth_date', 'contact_sub_type'];
+    $studentProgressSettings = CRM_Namelessevents_Settings::getEventSettings($form->getVar('_id'));
+
+    // Only bother with this if we've disabled online registration, and if Student
+    // Progress is enabled for this event.
+    if (
+      CRM_Utils_Array::value('is_online_registration', $form->_submitValues)
+      && CRM_Utils_Array::value('is_student_progress', $studentProgressSettings)
+    ) {
 
       // List of all included profiles:
       $profileIds = [];
@@ -29,7 +31,7 @@ function namelessevents_civicrm_validateForm($formName, &$fields, &$files, &$for
       $profileIds = array_unique(array_filter($profileIds));
 
       // Check that the required fields appear in at least one of the selected profiles.
-      $requiredUfFieldNames = ['birth_date', 'contact_sub_type'];
+      $requiredUfFieldNames = ['birth_date'];
       foreach ($requiredUfFieldNames as $requiredUfFieldName) {
         $apiParams = [
           'uf_group_id' => ['IN' => $profileIds],
@@ -38,7 +40,7 @@ function namelessevents_civicrm_validateForm($formName, &$fields, &$files, &$for
         ];
         $getFields = civicrm_api3('UFField', 'get', $apiParams);
         if (!$getFields['count']) {
-          $errors['is_online_registration'] = E::ts('If allowing online registration, you must provide both the "Date of Birth" and "Contact Sub-Type" fields in one of the "Include Profile" settings in the "Registration Screen" section.');
+          $errors['is_online_registration'] = E::ts('If allowing online registration with Student Progress enabled, you must provide the "Date of Birth" field in one of the "Include Profile" settings in the "Registration Screen" section.');
           break;
         }
       }
@@ -73,11 +75,10 @@ function namelessevents_civicrm_validateForm($formName, &$fields, &$files, &$for
           }
         }
         if ($additionalProfilesError) {
-          $errors['is_multiple_registrations'] = E::ts('If allowing multiple participant registration, you must provide both the "Date of Birth" and "Contact Sub-Type" fields in one of the "Profile for Additional Participants" settings in the "Registration Screen" section.');
+          $errors['is_multiple_registrations'] = E::ts('If allowing multiple participant registration with Student Progress enabled, you must provide the "Date of Birth" field in one of the "Profile for Additional Participants" settings in the "Registration Screen" section.');
         }
       }
     }
-
   }
 }
 
