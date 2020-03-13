@@ -16,6 +16,7 @@
   </urls>
   <requires>
     <ext>namelessprogress</ext>
+    <ext>com.joineryhq.profcond</ext>
   </requires>
   <releaseDate>2020-03-12</releaseDate>
   <version>1.0</version>
