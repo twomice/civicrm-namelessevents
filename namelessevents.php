@@ -20,8 +20,10 @@ function namelessevents_civicrm_buildForm($formName, &$form) {
       // Add a hidden form element, #ageprogressSubType, which will store the
       // age-based subtype ID based on contact's birthdate.
       $form->add(
-        'hidden', // field type
-        'ageprogressSubType', // field name
+        // field type
+        'hidden',
+        // field name
+        'ageprogressSubType',
         NULL,
         ['id' => 'ageprogressSubType']
       );
@@ -194,12 +196,16 @@ function namelessevents_civicrm_tabset($tabsetName, &$tabs, $context) {
 
       $tabs['studentprogress'] = [
         'title' => E::ts('Student Progress'),
-        'link' => NULL, // 'link' is automatically provided if we're under the 'civicrm/event/manage' path.
-        'class' => 'ajaxForm', // allows form to re-load itself on save.
-        'valid' => $tabIsValid, // indicates whether tab has actively used settings.
+        // 'link' is automatically provided if we're under the 'civicrm/event/manage' path.
+        'link' => NULL,
+        // allows form to re-load itself on save.
+        'class' => 'ajaxForm',
+        // indicates whether tab has actively used settings.
+        'valid' => $tabIsValid,
         'active' => TRUE,
-        'current' => FALSE, // setting this to FALSE prevents the tab from pre-loading
-                            // focus when the page is loaded.
+        // setting this to FALSE prevents the tab from pre-loading
+        // focus when the page is loaded.
+        'current' => FALSE,
       ];
     }
     else {
