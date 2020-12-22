@@ -40,8 +40,10 @@ class CRM_Namelessevents_Form_Event_ConfigSubtypeProfiles extends CRM_Event_Form
   public function buildQuickForm() {
     $this->assign('selectedChild', 'studentprogress');
     $this->add(
-      'hidden', // field type
-      'event_id' // field name
+      // field type
+      'hidden',
+      // field name
+      'event_id'
     );
     $this->addElement(
       'checkbox',

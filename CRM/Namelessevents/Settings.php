@@ -24,7 +24,7 @@ class CRM_Namelessevents_Settings {
     }
     return Civi::$statics[__CLASS__]['eventSettings'][$eventId];
   }
-  
+
   public static function saveAllEventSettings($eventId, $settings) {
     if (CRM_Utils_Array::value('is_student_progress', $settings)) {
       $profilesJson = GuzzleHttp\json_encode($settings['profiles']);
@@ -58,4 +58,5 @@ class CRM_Namelessevents_Settings {
       return FALSE;
     }
   }
+
 }
